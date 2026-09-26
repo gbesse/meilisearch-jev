@@ -10,3 +10,5 @@ jobs:
           python-version: "3.12"
       - name: Unit tests
         run: python -m unittest discover -p "test_*.py" -v
+      - name: Build container
+        run: docker build -t meilisearch-jev:test .
