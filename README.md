@@ -18,6 +18,14 @@ Filtro semántico de los mejores resultados con una cola de revisión.
 
 Defina ambas claves y ejecute el CLI. Clasifica un máximo de 20 resultados por defecto y separa `hits` de `review`.
 
+## Exemple hors ligne / Offline example / Ejemplo sin conexión
+
+FR : lancez `python3 -m examples.route_matrix` pour voir les quatre routes sur des valeurs synthétiques. L'entrée vide part en `review` sans appel fournisseur. Aucun serveur de plateforme ni clé API n'est nécessaire.
+
+EN: run `python3 -m examples.route_matrix` to see all four routes on synthetic values. Empty input goes to `review` without a provider call. No platform server or API key is needed.
+
+ES: ejecute `python3 -m examples.route_matrix` para ver las cuatro rutas con valores sintéticos. La entrada vacía va a `review` sin llamar al proveedor. No hace falta un servidor de plataforma ni una clave API.
+
 ## Contract / Contrat / Contrato
 
 FR : le seuil par défaut est `0.8`. Les routes sont `yes`, `no`, `review` et `failure`. Une entrée vide ou supérieure à 32 Kio donne `review` ; une erreur de transport ou de réponse donne `failure`. Le client limite les appels à 10 000 par processus, à 10 s par appel et à 100 Kio par réponse. Un cache LRU conserve au plus 1 024 verdicts valides par empreinte SHA-256 ; il ne conserve pas le texte brut. Les données sont envoyées à TypeSafe Jev.
