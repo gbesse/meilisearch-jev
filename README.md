@@ -75,3 +75,7 @@ ES: si Python no encuentra los certificados raíz, defina `SSL_CERT_FILE` con un
 Platform / Plateforme / Plataforma: [Meilisearch documentation](https://www.meilisearch.com/docs/reference/api/search).
 
 MIT license. Community project; not an official Meilisearch integration.
+
+## Contrôle d’adoption · Adoption check · Comprobación de adopción
+
+[Français : essayer un cas concret](examples/adoption-check.md) · [English: try a concrete case](examples/adoption-check.md) · [Español: pruebe un caso concreto](examples/adoption-check.md).
