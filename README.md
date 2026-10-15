@@ -79,3 +79,11 @@ MIT license. Community project; not an official Meilisearch integration.
 ## Contrôle d’adoption · Adoption check · Comprobación de adopción
 
 [Français : essayer un cas concret](examples/adoption-check.md) · [English: try a concrete case](examples/adoption-check.md) · [Español: pruebe un caso concreto](examples/adoption-check.md).
+
+## Complete candidate accounting / Comptage complet / Recuento completo
+
+EN: A hit without a string in the selected `field` now joins `review` with `reason_code: missing_text_field`, without a Jev call. `coverage` counts accepted, reviewed and excluded (`no`) hits; these counts sum to `candidates`. All returned hit objects and reserved `jev` fields are checked before the first decision, so a later conflict spends no semantic-call budget. Unknown decision routes fail instead of silently dropping hits. This accounts for the returned top-K, not the whole index or measured relevance.
+
+FR : Un résultat sans texte dans le `field` choisi rejoint désormais `review` avec `reason_code: missing_text_field`, sans appel Jev. `coverage` compte les résultats acceptés, à revoir et exclus (`no`) ; leur somme égale `candidates`. Tous les objets et champs réservés `jev` sont vérifiés avant la première décision : un conflit ultérieur ne dépense aucun budget sémantique. Une route inconnue échoue au lieu de perdre silencieusement un résultat. Ce comptage concerne le top-K retourné, pas tout l’index ni une pertinence mesurée.
+
+ES: Un resultado sin texto en el `field` elegido pasa a `review` con `reason_code: missing_text_field`, sin llamada Jev. `coverage` cuenta resultados aceptados, para revisión y excluidos (`no`); su suma equivale a `candidates`. Comprueba todos los objetos y campos reservados `jev` antes de la primera decisión: un conflicto posterior no consume presupuesto semántico. Una ruta desconocida falla en lugar de perder resultados silenciosamente. Cuenta el top-K devuelto, no todo el índice ni relevancia medida.

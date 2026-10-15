@@ -43,3 +43,31 @@ class SearchTest(unittest.TestCase):
     def test_public_bind_requires_token(self):
         with self.assertRaises(ValueError):
             serve('https://meili.example', host='0.0.0.0', token=None)
+
+
+class CoverageTest(unittest.TestCase):
+    def test_missing_field_is_reviewed_not_silently_dropped(self):
+        from unittest.mock import Mock
+        client=Mock();client.decide.side_effect=[{'route':'yes'},{'route':'no'},{'route':'failure'}]
+        rows=[{'id':1,'content':'yes'},{'id':2},{'id':3,'content':'no'},{'id':4,'content':'failure'}]
+        result=search('https://meili.example','reviews','query','Question?',fetch=lambda *a:{'hits':rows},client=client)
+        self.assertEqual([row['id'] for row in result['review']],[2,4])
+        self.assertEqual(result['review'][0]['jev']['reason_code'],'missing_text_field')
+        self.assertEqual(result['coverage'],{'accepted':1,'review':2,'excluded':1,'missing_text_field':1})
+        self.assertEqual(sum(result['coverage'][key] for key in ('accepted','review','excluded')),result['candidates'])
+        self.assertEqual(client.decide.call_count,3)
+        self.assertNotIn('jev',rows[1])
+
+    def test_later_conflict_blocks_before_any_decision(self):
+        from unittest.mock import Mock
+        for bad in ({'content':'bad','jev':{}}, 'not a hit'):
+            client=Mock()
+            with self.assertRaises(ValueError):
+                search('https://meili.example','reviews','query','Question?',fetch=lambda *a:{'hits':[{'content':'good'},bad]},client=client)
+            client.decide.assert_not_called()
+
+    def test_unknown_route_does_not_silently_drop_candidate(self):
+        from unittest.mock import Mock
+        client=Mock();client.decide.return_value={'route':'unknown'}
+        with self.assertRaises(ValueError):
+            search('https://meili.example','reviews','query','Question?',fetch=lambda *a:{'hits':[{'content':'x'}]},client=client)
