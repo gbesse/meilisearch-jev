@@ -35,20 +35,32 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
     hits = payload.get('hits')
     if not isinstance(hits, list) or len(hits) > candidates:
         raise ValueError('Invalid or excessive search response')
+    # Validate every row before any semantic call; later conflicts must not spend budget.
+    if any(not isinstance(hit, dict) or 'jev' in hit for hit in hits):
+        raise ValueError('invalid_search_hits / résultats_invalides / resultados_invalidos')
     judge = client or JevClient(question, threshold=threshold, max_calls=candidates)
     accepted, review = [], []
+    excluded = 0
+    missing_field = 0
     for hit in hits:
-        if not isinstance(hit, dict) or not isinstance(hit.get(field), str):
+        if not isinstance(hit.get(field), str):
+            missing_field += 1
+            review.append(dict(hit, jev={'route': 'review', 'probability': None,
+                                         'state_sha256': None, 'reason_code': 'missing_text_field'}))
             continue
-        if 'jev' in hit:
-            raise ValueError('Search hit already contains jev field')
         result = judge.decide(hit[field])
+        if not isinstance(result, dict) or result.get('route') not in ('yes', 'no', 'review', 'failure'):
+            raise ValueError('invalid_decision / décision_invalide / decision_invalida')
         item = dict(hit, jev=result)
         if result['route'] == 'yes':
             accepted.append(item)
         elif result['route'] in ('review', 'failure'):
             review.append(item)
-    return {'hits': accepted, 'review': review, 'candidates': len(hits)}
+        else:
+            excluded += 1
+    return {'hits': accepted, 'review': review, 'candidates': len(hits),
+            'coverage': {'accepted': len(accepted), 'review': len(review), 'excluded': excluded,
+                         'missing_text_field': missing_field}}
 
 def make_handler(base_url, *, token=None, search_fn=search):
     class Handler(BaseHTTPRequestHandler):
