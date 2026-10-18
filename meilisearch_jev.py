@@ -1,5 +1,7 @@
 """Bounded Meilisearch top-K semantic gate with typed Jev decisions."""
 import argparse
+import copy
+import math
 import hmac
 import json
 import os
@@ -10,6 +12,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from jev_common import JevClient
 
 def search(base_url, index, query, question, *, field='content', candidates=20, threshold=0.8, fetch=None, client=None):
+    if (not isinstance(base_url, str) or not isinstance(index, str) or not index or len(index)>128 or '/' in index
+        or isinstance(candidates, bool) or not isinstance(candidates, int) or not 1 <= candidates <= 100
+        or isinstance(threshold, bool) or not isinstance(threshold, (int,float)) or not math.isfinite(threshold) or not .5 <= threshold <= 1
+        or not isinstance(query, str) or not isinstance(question, str) or not question.strip()
+        or not isinstance(field, str) or not field.strip() or field == 'jev'):
+        raise ValueError('Paramètres de recherche invalides / Invalid search settings / Parámetros de búsqueda no válidos')
     parsed = urllib.parse.urlparse(base_url)
     if parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in ('localhost','127.0.0.1')):
         raise ValueError('Meilisearch URL must be HTTPS or loopback HTTP')
@@ -32,7 +40,7 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
         payload = fetch(url, body)
     if not isinstance(payload, dict):
         raise ValueError('Invalid search response')
-    hits = payload.get('hits')
+    hits = copy.deepcopy(payload.get('hits'))
     if not isinstance(hits, list) or len(hits) > candidates:
         raise ValueError('Invalid or excessive search response')
     # Validate every row before any semantic call; later conflicts must not spend budget.
@@ -51,7 +59,7 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
         result = judge.decide(hit[field])
         if not isinstance(result, dict) or result.get('route') not in ('yes', 'no', 'review', 'failure'):
             raise ValueError('invalid_decision / décision_invalide / decision_invalida')
-        item = dict(hit, jev=result)
+        item = dict(hit, jev=copy.deepcopy(result))
         if result['route'] == 'yes':
             accepted.append(item)
         elif result['route'] in ('review', 'failure'):

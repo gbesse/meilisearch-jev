@@ -71,3 +71,27 @@ class CoverageTest(unittest.TestCase):
         client=Mock();client.decide.return_value={'route':'unknown'}
         with self.assertRaises(ValueError):
             search('https://meili.example','reviews','query','Question?',fetch=lambda *a:{'hits':[{'content':'x'}]},client=client)
+
+
+class AdmissionTest(unittest.TestCase):
+    def test_invalid_settings_fail_before_search_or_semantic_spend(self):
+        from unittest.mock import Mock
+        for change in ({'candidates':True},{'candidates':1.5},{'threshold':float('nan')},{'threshold':True},{'threshold':.4},{'query':None},{'question':''},{'field':'jev'},{'index':123}):
+            fetch,client=Mock(),Mock()
+            args=dict(base_url='https://meili.example',index='reviews',query='query',question='Question?',fetch=fetch,client=client);args.update(change)
+            with self.assertRaisesRegex(ValueError,'Invalid search settings'): search(**args)
+            fetch.assert_not_called();client.decide.assert_not_called()
+
+    def test_source_rows_and_reused_decisions_cannot_rewrite_search_evidence(self):
+        rows=[{'id':1,'content':'one','metadata':{'source':'synthetic'}},{'id':2,'content':'two'}]
+        result={'route':'yes','probability':.9};seen=[]
+        class Client:
+            def decide(self,text):
+                seen.append(text)
+                if len(seen)==1: rows[1]['content']='mutated';rows[0]['metadata']['source']='mutated'
+                result['probability']=.9 if len(seen)==1 else .8
+                return result
+        output=search('https://meili.example','reviews','query','Question?',fetch=lambda *a:{'hits':rows},client=Client())
+        self.assertEqual(seen,['one','two']);self.assertEqual(output['hits'][0]['content'],'one')
+        self.assertEqual(output['hits'][0]['metadata']['source'],'synthetic');self.assertEqual(output['hits'][0]['jev']['probability'],.9)
+        output['hits'][0]['metadata']['source']='output mutation';self.assertEqual(rows[0]['metadata']['source'],'mutated')
