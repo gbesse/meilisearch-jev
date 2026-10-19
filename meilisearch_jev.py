@@ -11,12 +11,13 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from jev_common import JevClient
 
-def search(base_url, index, query, question, *, field='content', candidates=20, threshold=0.8, fetch=None, client=None):
+def search(base_url, index, query, question, *, field='content', candidates=20, threshold=0.8, search_filter=None, fetch=None, client=None):
     if (not isinstance(base_url, str) or not isinstance(index, str) or not index or len(index)>128 or '/' in index
         or isinstance(candidates, bool) or not isinstance(candidates, int) or not 1 <= candidates <= 100
         or isinstance(threshold, bool) or not isinstance(threshold, (int,float)) or not math.isfinite(threshold) or not .5 <= threshold <= 1
         or not isinstance(query, str) or not isinstance(question, str) or not question.strip()
-        or not isinstance(field, str) or not field.strip() or field == 'jev'):
+        or not isinstance(field, str) or not field.strip() or field == 'jev'
+        or (search_filter is not None and (not isinstance(search_filter, str) or not search_filter.strip() or len(search_filter.encode('utf-8')) > 4096))):
         raise ValueError('Paramètres de recherche invalides / Invalid search settings / Parámetros de búsqueda no válidos')
     parsed = urllib.parse.urlparse(base_url)
     if parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in ('localhost','127.0.0.1')):
@@ -28,6 +29,8 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
         raise ValueError('MEILI_API_KEY is required')
     url = base_url.rstrip('/') + '/indexes/' + urllib.parse.quote(index, safe='') + '/search'
     body = {'q': query, 'limit': candidates}
+    if search_filter is not None:
+        body['filter'] = search_filter
     if fetch is None:
         request = urllib.request.Request(url, data=json.dumps(body).encode(),
                  headers={'Authorization':'Bearer ' + key,'Content-Type':'application/json'}, method='POST')
@@ -50,16 +53,16 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
     accepted, review = [], []
     excluded = 0
     missing_field = 0
-    for hit in hits:
+    for rank, hit in enumerate(hits, 1):
         if not isinstance(hit.get(field), str):
             missing_field += 1
             review.append(dict(hit, jev={'route': 'review', 'probability': None,
-                                         'state_sha256': None, 'reason_code': 'missing_text_field'}))
+                                         'state_sha256': None, 'reason_code': 'missing_text_field', 'candidate_rank': rank}))
             continue
         result = judge.decide(hit[field])
         if not isinstance(result, dict) or result.get('route') not in ('yes', 'no', 'review', 'failure'):
             raise ValueError('invalid_decision / décision_invalide / decision_invalida')
-        item = dict(hit, jev=copy.deepcopy(result))
+        item = dict(hit, jev={**copy.deepcopy(result), 'candidate_rank': rank})
         if result['route'] == 'yes':
             accepted.append(item)
         elif result['route'] in ('review', 'failure'):
@@ -67,6 +70,7 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
         else:
             excluded += 1
     return {'hits': accepted, 'review': review, 'candidates': len(hits),
+            'retrieval': {'index': index, 'field': field, 'candidate_limit': candidates, 'returned': len(hits), 'filter_applied': search_filter is not None, 'scope': 'retrieved-candidates-only'},
             'coverage': {'accepted': len(accepted), 'review': len(review), 'excluded': excluded,
                          'missing_text_field': missing_field}}
 
@@ -95,7 +99,8 @@ def make_handler(base_url, *, token=None, search_fn=search):
                 result = search_fn(base_url, params['index'], params['query'], params['question'],
                                    field=params.get('field', 'content'),
                                    candidates=params.get('candidates', 20),
-                                   threshold=params.get('threshold', 0.8))
+                                   threshold=params.get('threshold', 0.8),
+                                   search_filter=params.get('filter'))
                 self._reply(200, result)
             except (ValueError, KeyError, TypeError):
                 self._reply(400, {'error': 'invalid_request'})
@@ -131,6 +136,7 @@ def main():
     parser.add_argument('--question')
     parser.add_argument('--field', default='content')
     parser.add_argument('--candidates', type=int, default=20)
+    parser.add_argument('--filter', help='Filtre Meilisearch avant classement / Meilisearch filter before judging / Filtro Meilisearch antes de evaluar')
     parser.add_argument('--serve', action='store_true')
     parser.add_argument('--host', default='127.0.0.1')
     parser.add_argument('--port', type=int, default=int(os.getenv('PORT', '8765')))
@@ -144,7 +150,7 @@ def main():
         if not all((args.index, args.query, args.question)):
             parser.error('--index, --query and --question are required in CLI mode')
         print(json.dumps(search(args.url, args.index, args.query, args.question,
-                                field=args.field, candidates=args.candidates), ensure_ascii=False))
+                                field=args.field, candidates=args.candidates, search_filter=args.filter), ensure_ascii=False))
     except (ValueError, OSError) as exc:
         print(type(exc).__name__ + ': ' + str(exc), file=sys.stderr)
         raise SystemExit(1)
