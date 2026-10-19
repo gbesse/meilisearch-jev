@@ -94,3 +94,11 @@ FR : Les paramètres de recherche sont validés avant toute recherche ou décisi
 EN: Search settings are validated before search or decision work: integer `candidates` 1–100 (not boolean), finite threshold 0.5–1, explicitly typed index/text/field; `jev` remains reserved for decisions. Returned rows and verdicts are copied so clients reusing objects cannot rewrite earlier evidence. Synthetic data only; no real Meilisearch server or live model measured.
 
 ES: Los parámetros se validan antes de búsqueda o decisión: `candidates` entero 1–100 (no booleano), umbral finito 0,5–1 e índice/texto/campo de tipos explícitos; `jev` queda reservado para decisiones. Se copian filas y veredictos para impedir que objetos reutilizados reescriban pruebas anteriores. Solo datos sintéticos; sin medir servidor Meilisearch ni modelo reales.
+
+## Filtrer avant classement / Filter before judging / Filtrar antes de evaluar
+
+FR — `search_filter` (Python), `--filter` (CLI) et `filter` (HTTP) transmettent un filtre Meilisearch avant tout jugement Jev. Texte non vide de 4 096 octets UTF-8 maximum ; la syntaxe et les attributs filtrables relèvent de Meilisearch. Les résultats gardent leur rang initial dans `jev.candidate_rank`, et `retrieval` décrit le périmètre borné. Aucun verdict ne couvre les documents hors candidats. Un filtre fourni par un client ne remplace pas une autorisation serveur ou une clé Meilisearch restreinte.
+
+EN — `search_filter` (Python), `--filter` (CLI) and `filter` (HTTP) forward a Meilisearch filter before any Jev judgment. Nonempty text up to 4,096 UTF-8 bytes; Meilisearch validates syntax and filterable attributes. Results retain original rank in `jev.candidate_rank`, while `retrieval` describes the bounded scope. No verdict covers documents outside candidates. Client-supplied filters do not replace server authorization or scoped Meilisearch keys.
+
+ES — `search_filter` (Python), `--filter` (CLI) y `filter` (HTTP) envían un filtro Meilisearch antes de evaluar con Jev. Texto no vacío de hasta 4.096 bytes UTF-8; Meilisearch valida sintaxis y atributos filtrables. Resultados conservan rango original en `jev.candidate_rank`, y `retrieval` describe alcance acotado. Ningún veredicto cubre documentos fuera de candidatos. Filtros del cliente no sustituyen autorización del servidor ni claves restringidas.
