@@ -53,15 +53,18 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
     accepted, review = [], []
     excluded = 0
     missing_field = 0
+    candidate_decisions = []
     for rank, hit in enumerate(hits, 1):
         if not isinstance(hit.get(field), str):
             missing_field += 1
+            candidate_decisions.append({'candidate_rank':rank,'route':'review','probability':None,'reason_code':'missing_text_field'})
             review.append(dict(hit, jev={'route': 'review', 'probability': None,
                                          'state_sha256': None, 'reason_code': 'missing_text_field', 'candidate_rank': rank}))
             continue
         result = judge.decide(hit[field])
         if not isinstance(result, dict) or result.get('route') not in ('yes', 'no', 'review', 'failure'):
             raise ValueError('invalid_decision / décision_invalide / decision_invalida')
+        candidate_decisions.append({'candidate_rank':rank,'route':result['route'],'probability':result.get('probability'),'state_sha256':result.get('state_sha256')})
         item = dict(hit, jev={**copy.deepcopy(result), 'candidate_rank': rank})
         if result['route'] == 'yes':
             accepted.append(item)
@@ -69,7 +72,7 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
             review.append(item)
         else:
             excluded += 1
-    return {'hits': accepted, 'review': review, 'candidates': len(hits),
+    return {'hits': accepted, 'review': review, 'candidates': len(hits), 'candidate_decisions':candidate_decisions,
             'retrieval': {'index': index, 'field': field, 'candidate_limit': candidates, 'returned': len(hits), 'filter_applied': search_filter is not None, 'scope': 'retrieved-candidates-only'},
             'coverage': {'accepted': len(accepted), 'review': len(review), 'excluded': excluded,
                          'missing_text_field': missing_field}}
