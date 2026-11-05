@@ -102,3 +102,12 @@ FR — `search_filter` (Python), `--filter` (CLI) et `filter` (HTTP) transmetten
 EN — `search_filter` (Python), `--filter` (CLI) and `filter` (HTTP) forward a Meilisearch filter before any Jev judgment. Nonempty text up to 4,096 UTF-8 bytes; Meilisearch validates syntax and filterable attributes. Results retain original rank in `jev.candidate_rank`, while `retrieval` describes the bounded scope. No verdict covers documents outside candidates. Client-supplied filters do not replace server authorization or scoped Meilisearch keys.
 
 ES — `search_filter` (Python), `--filter` (CLI) y `filter` (HTTP) envían un filtro Meilisearch antes de evaluar con Jev. Texto no vacío de hasta 4.096 bytes UTF-8; Meilisearch valida sintaxis y atributos filtrables. Resultados conservan rango original en `jev.candidate_rank`, y `retrieval` describe alcance acotado. Ningún veredicto cubre documentos fuera de candidatos. Filtros del cliente no sustituyen autorización del servidor ni claves restringidas.
+
+
+## 2026-11-05 — FR / EN / ES
+
+FR : `candidate_decisions` conserve une ligne par candidat récupéré, y compris exclu ou sans champ texte : rang, route, probabilité et empreinte disponibles. Le registre n’ajoute aucun appel et n’inclut pas les autres champs du document. Sa couverture reste limitée au top-K récupéré.
+
+EN: `candidate_decisions` retains one row per retrieved candidate including excluded or missing-text hits: rank, route, probability and available digest. Adds no calls or other document fields. Coverage remains limited to retrieved top-K.
+
+ES: `candidate_decisions` conserva una fila por candidato recuperado, incluso excluidos o sin texto: rango, ruta, probabilidad y huella disponible. Sin llamadas ni otros campos extra. Cobertura limitada al top-K recuperado.
