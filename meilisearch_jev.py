@@ -77,6 +77,17 @@ def search(base_url, index, query, question, *, field='content', candidates=20, 
             'coverage': {'accepted': len(accepted), 'review': len(review), 'excluded': excluded,
                          'missing_text_field': missing_field}}
 
+def summarize_candidate_decisions(result):
+    error='Registre invalide / Invalid decision ledger / Registro de decisiones inválido'
+    rows=result.get('candidate_decisions');count=result.get('candidates')
+    if not isinstance(rows,list)or type(count)is not int or count<0 or count>10000:raise ValueError(error)
+    ranks=[];counts={key:0 for key in ('yes','no','review','failure')};unknown=0
+    for row in rows:
+        rank=row.get('candidate_rank');route=row.get('route')
+        if type(rank)is not int or not 1<=rank<=count or rank in ranks or route not in counts:raise ValueError(error)
+        ranks.append(rank);counts[route]+=1;unknown+=row.get('probability')is None
+    return {'routes':counts,'unknown_probabilities':unknown,'ledger_complete':sorted(ranks)==list(range(1,count+1)),'retrieved_candidates_only':True,'corpus_recall_estimated':False}
+
 def make_handler(base_url, *, token=None, search_fn=search):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
