@@ -111,3 +111,12 @@ FR : `candidate_decisions` conserve une ligne par candidat récupéré, y compri
 EN: `candidate_decisions` retains one row per retrieved candidate including excluded or missing-text hits: rank, route, probability and available digest. Adds no calls or other document fields. Coverage remains limited to retrieved top-K.
 
 ES: `candidate_decisions` conserva una fila por candidato recuperado, incluso excluidos o sin texto: rango, ruta, probabilidad y huella disponible. Sin llamadas ni otros campos extra. Cobertura limitada al top-K recuperado.
+
+
+## 2026-11-12 — FR / EN / ES
+
+FR : Séparer échecs fournisseur et revue humaine dans le registre exhaustif des candidats récupérés.
+
+EN: Separate provider failures and human-review routes in exhaustive retrieved-candidate ledgers.
+
+ES: Separar fallos proveedor y rutas de revisión en registros completos de candidatos recuperados.
